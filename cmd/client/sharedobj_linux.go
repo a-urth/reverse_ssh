@@ -1,4 +1,5 @@
 //go:build linux && cgo && cshared
+// +build linux,cgo,cshared
 
 package main
 

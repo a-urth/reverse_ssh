@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -12,6 +11,8 @@ import (
 	"fmt"
 	"net"
 	"time"
+
+	"golang.org/x/crypto/ed25519"
 
 	"github.com/NHAS/reverse_ssh/pkg/logger"
 	"golang.org/x/crypto/ssh"

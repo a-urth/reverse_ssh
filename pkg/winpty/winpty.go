@@ -8,8 +8,6 @@ import (
 	"os"
 	"syscall"
 	"unsafe"
-
-	"golang.org/x/sys/windows"
 )
 
 const winptyDllName = "./winpty.dll"
@@ -59,7 +57,7 @@ func GetErrorMessage(ptr uintptr) string {
 		return "Unknown Error"
 	}
 
-	return windows.UTF16PtrToString((*uint16)(unsafe.Pointer(msgPtr)))
+	return ""
 }
 
 func UTF16PtrFromStringArray(s []string) (*uint16, error) {

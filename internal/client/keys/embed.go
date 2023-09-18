@@ -1,17 +1,17 @@
 package keys
 
 import (
-	_ "embed"
 	"log"
 
 	"github.com/NHAS/reverse_ssh/internal"
 	"golang.org/x/crypto/ssh"
 )
 
-//go:embed private_key
-var privateKey []byte
-
 func GetPrivateKey() (ssh.Signer, error) {
+	privateKey, err := Asset("embed/private_key")
+	if err != nil {
+		return nil, err
+	}
 
 	sshPriv, err := ssh.ParsePrivateKey(privateKey)
 	if err != nil {

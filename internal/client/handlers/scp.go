@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -99,7 +98,7 @@ func readProtocolControl(connection ssh.Channel) (string, uint32, uint64, string
 
 func readFile(connection ssh.Channel, path string, mode uint32, size uint64) error {
 
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, fs.FileMode(mode))
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, os.FileMode(mode))
 	if err != nil {
 
 		return err
@@ -252,7 +251,7 @@ func from(todownload string, connection ssh.Channel) {
 	return
 }
 
-func scpTransferDirectory(path string, mode fs.FileInfo, connection ssh.Channel) error {
+func scpTransferDirectory(path string, mode os.FileInfo, connection ssh.Channel) error {
 	_, err := connection.Write([]byte(fmt.Sprintf("D%#o 1 %s\n", mode.Mode().Perm(), filepath.Base(path))))
 	if err != nil {
 		return err
@@ -306,7 +305,7 @@ func readAck(conn ssh.Channel) (int, error) {
 
 }
 
-func scpTransferFile(path string, fi fs.FileInfo, connection ssh.Channel) error {
+func scpTransferFile(path string, fi os.FileInfo, connection ssh.Channel) error {
 
 	file, err := os.Open(path)
 	if err != nil {
