@@ -8,6 +8,7 @@ require (
 	github.com/justincormack/go-memfd v0.0.0-20170219213707-6e4af0518993
 	github.com/pkg/sftp v1.10.1
 	golang.org/x/crypto v0.0.0-20220131195533-30dcbda58838
+	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22
 )
 
 require (

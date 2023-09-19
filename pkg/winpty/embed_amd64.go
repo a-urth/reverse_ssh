@@ -4,19 +4,58 @@
 package winpty
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"syscall"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 func writeBinaries() error {
-	dllType := "xp"
+
+	vsn := windows.RtlGetVersion()
+
+	/*
+		https://msdn.microsoft.com/en-us/library/ms724832(VS.85).aspx
+		Windows 10					10.0*
+		Windows Server 2016			10.0*
+		Windows 8.1					6.3*
+		Windows Server 2012 R2		6.3*
+		Windows 8					6.2
+		Windows Server 2012			6.2
+		Windows 7					6.1
+		Windows Server 2008 R2		6.1
+		Windows Server 2008			6.0
+		Windows Vista				6.0
+		Windows Server 2003 R2		5.2
+		Windows Server 2003			5.2
+		Windows XP 64-Bit Edition	5.2
+		Windows XP					5.1
+		Windows 2000				5.0
+	*/
+
+	dllType := "regular"
+	if vsn.MajorVersion == 5 {
+		dllType = "xp"
+	}
+
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		log.Println("unable to get cache directory for writing winpty pe's writing may fail if directory is ro")
+	}
+
+	if err == nil {
+		winptyDllName = cacheDir + "\\temp\\" + winptyDllName
+		winptyAgentName = cacheDir + "\\temp\\" + winptyAgentName
+	}
 
 	if _, err := os.Stat(winptyDllName); os.IsNotExist(err) {
-		dll, err := Asset(path.Join("embed/x64", dllType, winptyDllName))
+		dll, err := Asset(path.Join("embed", "x64", dllType, "winpty.dll"))
 		if err != nil {
 			panic(err)
 		}
@@ -27,7 +66,7 @@ func writeBinaries() error {
 	}
 
 	if _, err := os.Stat(winptyAgentName); os.IsNotExist(err) {
-		dll, err := Asset(path.Join("embed/x64", dllType, winptyAgentName))
+		dll, err := Asset(path.Join("embed", "x64", dllType, "winpty-agent.exe"))
 		if err != nil {
 			panic(err)
 		}
@@ -42,6 +81,10 @@ func writeBinaries() error {
 
 func createAgentCfg(flags uint32) (uintptr, error) {
 	var errorPtr uintptr
+
+	if winpty_error_free == nil {
+		return uintptr(0), errors.New("winpty was not initalised")
+	}
 
 	err := winpty_error_free.Find() // check if dll available
 	if err != nil {

@@ -46,7 +46,7 @@ server:
 .generate_keys:
 	mkdir -p bin
 # Supress errors if user doesn't overwrite existing key
-	ssh-keygen -t ed25519 -N '' -C '' -f internal/client/keys/private_key || true
+	ssh-keygen -t ed25519 -N '' -C '' -f internal/client/keys/embed/private_key || true
 # Avoid duplicate entries
 	touch bin/authorized_controllee_keys
-	@grep -q "$$(cat internal/client/keys/private_key.pub)" bin/authorized_controllee_keys || cat internal/client/keys/private_key.pub >> bin/authorized_controllee_keys
+	@grep -q "$$(cat internal/client/keys/embed/private_key.pub)" bin/authorized_controllee_keys || cat internal/client/keys/embed/private_key.pub >> bin/authorized_controllee_keys

@@ -8,10 +8,14 @@ import (
 	"os"
 	"syscall"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
-const winptyDllName = "./winpty.dll"
-const winptyAgentName = "./winpty-agent.exe"
+var (
+	winptyDllName   = "winpty.dll"
+	winptyAgentName = "winpty-agent.exe"
+)
 
 type Options struct {
 	// AppName sets the title of the console
@@ -57,7 +61,7 @@ func GetErrorMessage(ptr uintptr) string {
 		return "Unknown Error"
 	}
 
-	return ""
+	return windows.UTF16PtrToString((*uint16)(unsafe.Pointer(msgPtr)))
 }
 
 func UTF16PtrFromStringArray(s []string) (*uint16, error) {
@@ -77,25 +81,11 @@ func UTF16PtrFromStringArray(s []string) (*uint16, error) {
 	return &r[0], nil
 }
 
-// the same as open, but uses defaults for Env & Dir
-func Open(cmd string, InitialCols, InitialRows uint32) (*WinPTY, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get dir on setup: %s", err)
-	}
-
-	return OpenWithOptions(Options{
-		Command:     cmd,
-		Dir:         wd,
-		Env:         os.Environ(),
-		InitialCols: InitialCols,
-		InitialRows: InitialRows,
-	})
-}
-
 func OpenWithOptions(options Options) (*WinPTY, error) {
-	loadWinPty()
-
+	err := loadWinPty()
+	if err != nil {
+		return nil, err
+	}
 	// create config with specified Flags
 	agentCfg, err := createAgentCfg(options.Flags)
 

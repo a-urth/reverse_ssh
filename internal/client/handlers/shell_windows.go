@@ -16,6 +16,7 @@ import (
 	"github.com/NHAS/reverse_ssh/pkg/logger"
 	"github.com/NHAS/reverse_ssh/pkg/winpty"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/sys/windows"
 )
 
 // The basic windows shell handler, as there arent any good golang libraries to work with windows conpty
@@ -41,8 +42,21 @@ func shell(user *internal.User, connection ssh.Channel, requests <-chan *ssh.Req
 }
 
 func runCommandWithPty(command string, args []string, user *internal.User, requests <-chan *ssh.Request, log logger.Logger, connection ssh.Channel) {
+
 	fullCommand := command + " " + strings.Join(args, " ")
-	runWithWinPty(fullCommand, connection, requests, log, *user.Pty)
+	vsn := windows.RtlGetVersion()
+	if vsn.MajorVersion < 10 || vsn.BuildNumber < 17763 {
+
+		log.Info("Windows version too old for Conpty (%d, %d), using basic shell", vsn.MajorVersion, vsn.BuildNumber)
+		runWithWinPty(fullCommand, connection, requests, log, *user.Pty)
+
+	} else {
+		err := runWithConpty(fullCommand, connection, requests, log, *user.Pty)
+		if err != nil {
+			log.Error("unable to run with conpty, falling back to winpty: %v", err)
+			runWithWinPty(fullCommand, connection, requests, log, *user.Pty)
+		}
+	}
 }
 
 func runWithWinPty(command string, connection ssh.Channel, reqs <-chan *ssh.Request, log logger.Logger, ptyReq internal.PtyReq) error {
